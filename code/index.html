@@ -1,7 +1,7 @@
 <!--
  * @Author: flwfdd
  * @Date: 2022-08-23 10:27:57
- * @LastEditTime: 2022-09-02 00:40:09
+ * @LastEditTime: 2022-09-02 01:04:38
  * @Description: 
  * _(:з」∠)_
 -->
@@ -378,7 +378,7 @@
             this.exam.log_id = res.data.log_id;
             this.exam.problems = res.data.problems;
             this.result.start_time = new Date(res.data.start_time);
-            this.res_time = (new Date(res.data.end_time)-new Date())/1000;
+            this.res_time = (new Date(res.data.end_time) - new Date()) / 1000;
             this.interval_pool.push(setInterval(() => {
               this.res_time -= 1
             }, 1000));
@@ -403,7 +403,7 @@
             name: this.sid + this.name,
             answers: JSON.stringify(l),
           }).then(res => {
-            this.result.start_time=new Date(res.data.start_time);
+            this.result.start_time = new Date(res.data.start_time);
             this.result.end_time = new Date(res.data.end_time);
             this.result.score = res.data.score;
             this.result.full_score = res.data.full_score;
@@ -411,6 +411,8 @@
               if (res.data.result[i].ac) this.exam.problems[i].msg = "✅回答正确！";
               else this.exam.problems[i].msg = `❌正确答案为 ${res.data.result[i].answer}`;
             }
+            document.oncontextmenu = function () { return true; };
+            document.onselectstart = function () { return true; };
             window.scrollTo(0, 0);
           }).catch(() => {
             alert("出错了Orz");
@@ -448,6 +450,8 @@
         },
       },
       created() {
+        document.oncontextmenu = function () { return false; };
+        document.onselectstart = function () { return false; };
         this.UpHitokoto();
         setInterval(this.UpHitokoto, 11 * 1000);
         this.InitExam();
