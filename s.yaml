@@ -26,6 +26,8 @@ vars: # 全局变量
   service:
     name: "OnlineExam"
     description: 'Serverless Devs Web Framework Service'
+  TZ: "Asia/Shanghai"
+  db_url: ""
 
 services:
   framework: # 业务名称/模块名称
@@ -60,6 +62,7 @@ services:
             authType: anonymous
             methods:
               - GET
+              - POST
       customDomains:
         - domainName: auto
           protocol: HTTP
