@@ -1,7 +1,7 @@
 '''
 Author: flwfdd
 Date: 2022-08-28 15:52:41
-LastEditTime: 2022-09-03 17:32:53
+LastEditTime: 2022-09-03 17:47:40
 Description: 
 _(:з」∠)_
 '''
@@ -123,16 +123,16 @@ def exam_submit():
 
     # 抽奖
     q.extra="很遗憾，没有中奖捏:("
-    if int(random.random()*100+1)<=q.score:
+    if int(random.random()*q.full_score+1)<=q.score:
         prizes=db.Prize.query.filter_by(exam=q.exam).with_for_update().all()
         tot=sum([i.remain for i in prizes])
         x=random.random()
         r=0
         if tot!=0:
-            for i in q:
-                r+=q.remain/tot
+            for i in prizes:
+                r+=i.remain/tot
                 if x<r:
-                    q.extra="恭喜获得奖品{}！请于9.10-9.16至网协办公室（北校区北理桥下）领取哦~".format(i.text)
+                    q.extra="恭喜获得{}！请于9.10-9.16至网协办公室（北校区北理桥下）领取哦~".format(i.text)
                     i.remain-=1
                     break
 
