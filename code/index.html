@@ -1,7 +1,7 @@
 <!--
  * @Author: flwfdd
  * @Date: 2022-08-23 10:27:57
- * @LastEditTime: 2022-09-02 01:04:38
+ * @LastEditTime: 2022-09-03 17:35:15
  * @Description: 
  * _(:з」∠)_
 -->
@@ -299,7 +299,7 @@
         <p id="intro">{{exam.intro}}</p>
         <p id="profile"></p>
         <p v-if="result.score!=-1">得分：{{result.score}}/{{result.full_score}} |
-          耗时：{{FormatTime((result.end_time-result.start_time)/1000)}}</p>
+          耗时：{{FormatTime((result.end_time-result.start_time)/1000)}}<br/>{{result.extra}}</p>
         <div v-if="!exam.problems.length">
           <div class="input_container">
             学号：<input type="text" v-model="sid">
@@ -336,6 +336,21 @@
   </footer>
 
   <script>
+    // 添加响应拦截器
+    axios.interceptors.response.use(function (response) {
+      // 2xx 范围内的状态码都会触发该函数。
+      // 对响应数据做点什么
+      return response;
+    }, function (error) {
+      // 超出 2xx 范围的状态码都会触发该函数。
+      // 对响应错误做点什么
+      if(error.response.data.msg){
+        alert(error.response.data.msg);
+      }
+      else alert("出错了Orz");
+      return Promise.reject(error);
+    });
+
     vm = new Vue({
       el: "#app",
       data: {
@@ -359,6 +374,7 @@
           score: -1,
           start_time: 0,
           end_time: 0,
+          extra:"",
         }
       },
       methods: {
@@ -383,8 +399,6 @@
               this.res_time -= 1
             }, 1000));
             this.interval_pool.push(setInterval(this.SubmitExam, this.res_time * 1000));
-          }).catch(() => {
-            alert("出错了Orz");
           })
         },
         SubmitExam() {
@@ -407,6 +421,7 @@
             this.result.end_time = new Date(res.data.end_time);
             this.result.score = res.data.score;
             this.result.full_score = res.data.full_score;
+            this.result.extra=res.data.extra;
             for (let i in res.data.result) {
               if (res.data.result[i].ac) this.exam.problems[i].msg = "✅回答正确！";
               else this.exam.problems[i].msg = `❌正确答案为 ${res.data.result[i].answer}`;
@@ -414,8 +429,6 @@
             document.oncontextmenu = function () { return true; };
             document.onselectstart = function () { return true; };
             window.scrollTo(0, 0);
-          }).catch(() => {
-            alert("出错了Orz");
           })
         },
         FormatDate(t) {

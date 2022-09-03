@@ -1,7 +1,7 @@
 '''
 Author: flwfdd
 Date: 2022-03-09 13:37:03
-LastEditTime: 2022-09-01 22:47:57
+LastEditTime: 2022-09-03 16:58:44
 Description: 数据库
 _(:з」∠)_
 '''
@@ -42,7 +42,15 @@ class Exam(db.Model):
     intro = db.Column(db.Text, default="考试介绍")
     limit_time = db.Column(db.Integer, default=42)
     random = db.Column(db.Integer, default=0)
+    limit_number = db.Column(db.Integer, default=0)
     active = db.Column(db.Boolean, default=True)
+
+class Prize(db.Model):
+    __tablename__='prize'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    exam = db.Column(db.Integer,nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    remain=db.Column(db.Integer, default=0)
 
 
 class Problem(db.Model):
@@ -77,3 +85,4 @@ class ExamLog(db.Model):
     start_time = db.Column(db.DateTime, default=datetime.datetime.now)
     end_time = db.Column(db.DateTime)
     finish = db.Column(db.Boolean, default=False)
+    extra = db.Column(db.Text)

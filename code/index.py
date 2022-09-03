@@ -1,11 +1,12 @@
 '''
 Author: flwfdd
 Date: 2022-08-28 15:52:41
-LastEditTime: 2022-09-02 00:28:45
+LastEditTime: 2022-09-03 17:32:53
 Description: 
 _(:з」∠)_
 '''
-from operator import and_
+from sqlalchemy import and_, or_
+import random
 from flask import Flask, Response, request
 from sqlalchemy.sql.expression import func
 from datetime import datetime, date, timedelta
@@ -41,8 +42,8 @@ def res(data, status=200):
 
 @app.route('/')
 def index():
-    with open("index.html","r",encoding="utf-8") as f:
-        s=f.read()
+    with open("index.html", "r", encoding="utf-8") as f:
+        s = f.read()
     return s
 
 
@@ -59,8 +60,12 @@ def exam_start():
     data = request.get_json()
     name = data.get('name', '')
     exam = data.get('exam', '')
-    e = db.Exam.query.filter(db.Exam.id == exam, db.Exam.active == True).first()
-    lg=db.ExamLog.query.filter(db.ExamLog.exam==exam,db.ExamLog.name==name,db.ExamLog.finish==False,db.ExamLog.end_time>datetime.now()).first()
+    e = db.Exam.query.filter(
+        db.Exam.id == exam, db.Exam.active == True).first()
+    if db.db.session.query(func.count(db.ExamLog.id)).filter(db.ExamLog.exam == exam, db.ExamLog.name == name, or_(db.ExamLog.finish == True, db.ExamLog.end_time <= datetime.now())).scalar() >= e.limit_number:
+        return res({'msg': '提交数量已达上限（{}次）！'.format(e.limit_number)}, 403)
+    lg = db.ExamLog.query.filter(db.ExamLog.exam == exam, db.ExamLog.name == name,
+                                 db.ExamLog.finish == False, db.ExamLog.end_time > datetime.now()).first()
     if not lg:
         q = db.Problem.query.filter(
             and_(db.Problem.exam == exam, db.Problem.active == True))
@@ -73,11 +78,11 @@ def exam_start():
                         end_time=datetime.now()+timedelta(seconds=e.limit_time+4.2))
         db.add(lg)
         db.commit()
-    q=lg.problems
+    q = lg.problems
     dic = {
         "title": e.title,
         "intro": e.intro,
-        "start_time":lg.start_time,
+        "start_time": lg.start_time,
         "end_time": lg.end_time-timedelta(seconds=4.2),
         "log_id": lg.id,
         "problems": [{
@@ -95,32 +100,45 @@ def exam_submit():
     data = request.get_json()
     log_id = data.get('log_id', '')
     name = data.get('name', '')
-    submit_answers=data.get('answers','')
-    out=[]
-    score=0
-    q=db.ExamLog.query.filter(and_(db.ExamLog.id==log_id,db.ExamLog.name==name)).first()
-    if datetime.now()> q.end_time:
-        return res({'msg':"超出时间限制"},500)
-    q.end_time=datetime.now()
-    q.finish=True
-    q.submit_answers=submit_answers
-    submit_answers=json.loads(submit_answers)
-    answers=[i.answer for i in q.problems]
-    scores=[i.score for i in q.problems]
+    submit_answers = data.get('answers', '')
+    out = []
+    score = 0
+    q = db.ExamLog.query.filter(
+        and_(db.ExamLog.id == log_id, db.ExamLog.name == name)).first()
+    if datetime.now() > q.end_time:
+        return res({'msg': "超出时间限制"}, 500)
+    q.end_time = datetime.now()
+    q.finish = True
+    q.submit_answers = submit_answers
+    submit_answers = json.loads(submit_answers)
+    answers = [i.answer for i in q.problems]
+    scores = [i.score for i in q.problems]
     for i in range(len(answers)):
-        if submit_answers[i]==answers[i]:
-            out.append({"ac":True})
-            score+=scores[i]
+        if submit_answers[i] == answers[i]:
+            out.append({"ac": True})
+            score += scores[i]
         else:
-            out.append({"ac":False,"answer":answers[i]})
-    q.score=score
+            out.append({"ac": False, "answer": answers[i]})
+    q.score = score
+
+    # 抽奖
+    q.extra="很遗憾，没有中奖捏:("
+    if int(random.random()*100+1)<=q.score:
+        prizes=db.Prize.query.filter_by(exam=q.exam).with_for_update().all()
+        tot=sum([i.remain for i in prizes])
+        x=random.random()
+        r=0
+        if tot!=0:
+            for i in q:
+                r+=q.remain/tot
+                if x<r:
+                    q.extra="恭喜获得奖品{}！请于9.10-9.16至网协办公室（北校区北理桥下）领取哦~".format(i.text)
+                    i.remain-=1
+                    break
+
     db.commit()
-    return res({"full_score":q.full_score,"score":score,"result":out,"start_time":q.start_time,"end_time":q.end_time})
+    return res({"full_score": q.full_score, "score": score, "result": out, "start_time": q.start_time, "end_time": q.end_time,"extra":q.extra})
+
 
 if __name__ == "__main__":
-    q=db.Problem.query.filter(db.Problem.id.in_([4,2])).all()
-    for i in q:
-        print(i.text)
     app.run(host="0.0.0.0", port=9000)
-    
-
