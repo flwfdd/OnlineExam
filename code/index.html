@@ -1,7 +1,7 @@
 <!--
  * @Author: flwfdd
  * @Date: 2022-08-23 10:27:57
- * @LastEditTime: 2022-09-03 17:48:23
+ * @LastEditTime: 2022-09-05 23:25:08
  * @Description: 
  * _(:з」∠)_
 -->
@@ -17,8 +17,9 @@
   <!-- <script src="./assets/vue.js"></script> -->
   <script src="https://cdn.bootcdn.net/ajax/libs/axios/0.27.2/axios.min.js"></script>
   <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.7.10/vue.min.js"></script>
+  <script src="https://v-cn.vaptcha.com/v3.js"></script>
 
-  <link rel="stylesheet" href="https://fonts.loli.net/css?family=Noto+Serif+SC:100,300,400,500,700,900">
+  <link rel="stylesheet" href="https://fonts.loli.net/css?family=Noto+Serif+SC:300,500,700,900">
 
   <style>
     body {
@@ -307,7 +308,7 @@
           <div class="input_container">
             姓名：<input type="text" v-model="name">
           </div>
-          <button @click.once="StartExam">直接来吧！</button>
+          <button :disabled="!vaptcha.obj" @click.once="vaptcha.obj.validate()">直接来吧！</button>
         </div>
       </div>
 
@@ -348,6 +349,7 @@
         alert(error.response.data.msg);
       }
       else alert("出错了Orz");
+      window.location.reload();
       return Promise.reject(error);
     });
 
@@ -355,8 +357,8 @@
       el: "#app",
       data: {
         hitokoto: "",
-        apiurl: "https://flask-onlineexam-xvczascsjl.cn-hangzhou.fcapp.run",
-        // apiurl:"http://127.0.0.1:9000",
+        // apiurl: "https://flask-onlineexam-xvczascsjl.cn-hangzhou.fcapp.run",
+        apiurl:"http://127.0.0.1:9000",
         sid: "",
         name: "",
         exam: {
@@ -375,7 +377,12 @@
           start_time: 0,
           end_time: 0,
           extra:"",
-        }
+        },
+        vaptcha:{
+          obj:null,
+          server:"",
+          token:""
+        },
       },
       methods: {
         InitExam() {
@@ -390,6 +397,8 @@
           axios.post(this.apiurl + "/exam/start/", {
             exam: 1,
             name: this.sid + this.name,
+            vaptcha_server:this.vaptcha.server,
+            vaptcha_token:this.vaptcha.token,
           }).then(res => {
             this.exam.log_id = res.data.log_id;
             this.exam.problems = res.data.problems;
@@ -468,6 +477,24 @@
         this.UpHitokoto();
         setInterval(this.UpHitokoto, 11 * 1000);
         this.InitExam();
+
+        vaptcha({
+            vid: '63160a99ddd74f18e28e2a74',
+            mode: 'invisible',
+            scene: 0,
+            area: 'auto',
+        }).then((VAPTCHAObj)=> {
+            // 将VAPTCHA验证实例保存到局部变量中
+            this.vaptcha.obj = VAPTCHAObj;
+
+            // 验证成功进行后续操作
+            VAPTCHAObj.listen('pass', ()=> {
+                serverToken = VAPTCHAObj.getServerToken();
+                this.vaptcha.server=serverToken.server;
+                this.vaptcha.token=serverToken.token;
+                this.StartExam();
+            })
+        })
       }
     })
   </script>

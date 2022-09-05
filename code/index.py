@@ -1,7 +1,7 @@
 '''
 Author: flwfdd
 Date: 2022-08-28 15:52:41
-LastEditTime: 2022-09-03 17:47:40
+LastEditTime: 2022-09-05 23:28:39
 Description: 
 _(:з」∠)_
 '''
@@ -11,6 +11,7 @@ from flask import Flask, Response, request
 from sqlalchemy.sql.expression import func
 from datetime import datetime, date, timedelta
 from flask_cors import CORS
+import requests
 import json
 import config
 import db
@@ -60,6 +61,21 @@ def exam_start():
     data = request.get_json()
     name = data.get('name', '')
     exam = data.get('exam', '')
+    vaptcha_server=data.get('vaptcha_server', '')
+    vaptcha_token=data.get('vaptcha_token', '')
+    ip=request.remote_addr
+    
+    r=requests.post(vaptcha_server,json={
+        'id':config.vaptcha_id,
+        'secretkey':config.vaptcha_key,
+        'scene':0,
+        'token':vaptcha_token,
+        'ip':ip
+        })
+    dic=r.json()
+    if not dic['success']:
+        return res({'msg':'验证失败Orz'},401)
+
     e = db.Exam.query.filter(
         db.Exam.id == exam, db.Exam.active == True).first()
     if db.db.session.query(func.count(db.ExamLog.id)).filter(db.ExamLog.exam == exam, db.ExamLog.name == name, or_(db.ExamLog.finish == True, db.ExamLog.end_time <= datetime.now())).scalar() >= e.limit_number:
@@ -132,7 +148,7 @@ def exam_submit():
             for i in prizes:
                 r+=i.remain/tot
                 if x<r:
-                    q.extra="恭喜获得{}！请于9.10-9.16至网协办公室（北校区北理桥下）领取哦~".format(i.text)
+                    q.extra="恭喜获得{}！".format(i.text)
                     i.remain-=1
                     break
 
