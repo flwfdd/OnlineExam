@@ -1,7 +1,7 @@
 '''
 Author: flwfdd
 Date: 2022-08-28 15:52:41
-LastEditTime: 2022-09-05 23:28:39
+LastEditTime: 2022-09-07 15:26:37
 Description: 
 _(:з」∠)_
 '''
@@ -12,6 +12,7 @@ from sqlalchemy.sql.expression import func
 from datetime import datetime, date, timedelta
 from flask_cors import CORS
 import requests
+import hmac
 import json
 import config
 import db
@@ -56,24 +57,48 @@ def exam_info():
     return res(db.to_dict(e))
 
 
+def geetest(dic):
+    # 1.初始化极验参数信息
+    captcha_id = config.geetest_id
+    captcha_key = config.geetest_key
+    api_server = 'http://gcaptcha4.geetest.com'
+
+    # 2.获取用户验证后前端传过来的验证参数
+    lot_number = dic['lot_number']
+    captcha_output = dic['captcha_output']
+    pass_token = dic['pass_token']
+    gen_time = dic['gen_time']
+
+    # 3.生成签名
+    # 生成签名使用标准的hmac算法，使用用户当前完成验证的流水号lot_number作为原始消息message，使用客户验证私钥作为key
+    # 采用sha256散列算法将message和key进行单向散列生成最终的签名
+    lotnumber_bytes = lot_number.encode()
+    prikey_bytes = captcha_key.encode()
+    sign_token = hmac.new(prikey_bytes, lotnumber_bytes, digestmod='SHA256').hexdigest()
+
+    # 4.上传校验参数到极验二次验证接口, 校验用户验证状态
+    query = {
+        "lot_number": lot_number,
+        "captcha_output": captcha_output,
+        "pass_token": pass_token,
+        "gen_time": gen_time,
+        "sign_token": sign_token,
+    }
+    # captcha_id 参数建议放在 url 后面, 方便请求异常时可以在日志中根据id快速定位到异常请求
+    url = api_server + '/validate' + '?captcha_id={}'.format(captcha_id)
+    # 注意处理接口异常情况，当请求极验二次验证接口异常或响应状态非200时做出相应异常处理
+    # 保证不会因为接口请求超时或服务未响应而阻碍业务流程
+    dic = requests.post(url, query).json()
+    return dic['result']=='success'
+
 @app.route('/exam/start/', methods=['POST'])
 def exam_start():
     data = request.get_json()
     name = data.get('name', '')
     exam = data.get('exam', '')
-    vaptcha_server=data.get('vaptcha_server', '')
-    vaptcha_token=data.get('vaptcha_token', '')
-    ip=request.remote_addr
+    captcha=data.get('captcha', '')
     
-    r=requests.post(vaptcha_server,json={
-        'id':config.vaptcha_id,
-        'secretkey':config.vaptcha_key,
-        'scene':0,
-        'token':vaptcha_token,
-        'ip':ip
-        })
-    dic=r.json()
-    if not dic['success']:
+    if not geetest(json.loads(captcha)):
         return res({'msg':'验证失败Orz'},401)
 
     e = db.Exam.query.filter(

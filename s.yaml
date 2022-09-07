@@ -55,6 +55,8 @@ services:
         timeout: 60
         environmentVariables:
           TZ: Asia/Shanghai
+          geetest_id:
+          geetest_key:
       triggers:
         - name: httpTrigger
           type: http

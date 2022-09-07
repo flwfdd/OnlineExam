@@ -1,7 +1,7 @@
 <!--
  * @Author: flwfdd
  * @Date: 2022-08-23 10:27:57
- * @LastEditTime: 2022-09-05 23:25:08
+ * @LastEditTime: 2022-09-07 15:27:38
  * @Description: 
  * _(:з」∠)_
 -->
@@ -17,7 +17,7 @@
   <!-- <script src="./assets/vue.js"></script> -->
   <script src="https://cdn.bootcdn.net/ajax/libs/axios/0.27.2/axios.min.js"></script>
   <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.7.10/vue.min.js"></script>
-  <script src="https://v-cn.vaptcha.com/v3.js"></script>
+  <script src="https://static.geetest.com/v4/gt4.js"></script>
 
   <link rel="stylesheet" href="https://fonts.loli.net/css?family=Noto+Serif+SC:300,500,700,900">
 
@@ -300,7 +300,7 @@
         <p id="intro">{{exam.intro}}</p>
         <p id="profile"></p>
         <p v-if="result.score!=-1">得分：{{result.score}}/{{result.full_score}} |
-          耗时：{{FormatTime((result.end_time-result.start_time)/1000)}}<br/>{{result.extra}}</p>
+          耗时：{{FormatTime((result.end_time-result.start_time)/1000)}}<br />{{result.extra}}</p>
         <div v-if="!exam.problems.length">
           <div class="input_container">
             学号：<input type="text" v-model="sid">
@@ -308,7 +308,8 @@
           <div class="input_container">
             姓名：<input type="text" v-model="name">
           </div>
-          <button :disabled="!vaptcha.obj" @click.once="vaptcha.obj.validate()">直接来吧！</button>
+          <div id="captcha"></div>
+          <!-- <button @click.once="">直接来吧！</button> -->
         </div>
       </div>
 
@@ -345,7 +346,7 @@
     }, function (error) {
       // 超出 2xx 范围的状态码都会触发该函数。
       // 对响应错误做点什么
-      if(error.response.data.msg){
+      if (error.response.data.msg) {
         alert(error.response.data.msg);
       }
       else alert("出错了Orz");
@@ -358,7 +359,7 @@
       data: {
         hitokoto: "",
         // apiurl: "https://flask-onlineexam-xvczascsjl.cn-hangzhou.fcapp.run",
-        apiurl:"http://127.0.0.1:9000",
+        apiurl: "http://127.0.0.1:9000",
         sid: "",
         name: "",
         exam: {
@@ -376,13 +377,8 @@
           score: -1,
           start_time: 0,
           end_time: 0,
-          extra:"",
-        },
-        vaptcha:{
-          obj:null,
-          server:"",
-          token:""
-        },
+          extra: "",
+        }
       },
       methods: {
         InitExam() {
@@ -393,12 +389,11 @@
               this.exam.limit_time = res.data.limit_time;
             })
         },
-        StartExam() {
+        StartExam(captcha) {
           axios.post(this.apiurl + "/exam/start/", {
             exam: 1,
             name: this.sid + this.name,
-            vaptcha_server:this.vaptcha.server,
-            vaptcha_token:this.vaptcha.token,
+            captcha:JSON.stringify(captcha),
           }).then(res => {
             this.exam.log_id = res.data.log_id;
             this.exam.problems = res.data.problems;
@@ -430,7 +425,7 @@
             this.result.end_time = new Date(res.data.end_time);
             this.result.score = res.data.score;
             this.result.full_score = res.data.full_score;
-            this.result.extra=res.data.extra;
+            this.result.extra = res.data.extra;
             for (let i in res.data.result) {
               if (res.data.result[i].ac) this.exam.problems[i].msg = "✅回答正确！";
               else this.exam.problems[i].msg = `❌正确答案为 ${res.data.result[i].answer}`;
@@ -472,29 +467,24 @@
         },
       },
       created() {
+        // if(window.location.origin!="http://online-exam.fc.flwfdd.xyz"&&window.location.origin!="http://online-exam.fc.flwfdd.xyz/")window.location.href="http://online-exam.fc.flwfdd.xyz";
         document.oncontextmenu = function () { return false; };
         document.onselectstart = function () { return false; };
         this.UpHitokoto();
         setInterval(this.UpHitokoto, 11 * 1000);
         this.InitExam();
 
-        vaptcha({
-            vid: '63160a99ddd74f18e28e2a74',
-            mode: 'invisible',
-            scene: 0,
-            area: 'auto',
-        }).then((VAPTCHAObj)=> {
-            // 将VAPTCHA验证实例保存到局部变量中
-            this.vaptcha.obj = VAPTCHAObj;
+        initGeetest4({
+          captchaId: 'befd1ed2f6ade67139dd01e232f2c6b5',
+        },(captcha)=> {
+          // captcha为验证码实例
+          captcha.appendTo("#captcha");// 调用appendTo将验证码插入到页的某一个元素中，这个元素用户可以自定义
+          captcha.onSuccess(()=>{
+            this.StartExam(captcha.getValidate());
+          })
+          
+        });
 
-            // 验证成功进行后续操作
-            VAPTCHAObj.listen('pass', ()=> {
-                serverToken = VAPTCHAObj.getServerToken();
-                this.vaptcha.server=serverToken.server;
-                this.vaptcha.token=serverToken.token;
-                this.StartExam();
-            })
-        })
       }
     })
   </script>
