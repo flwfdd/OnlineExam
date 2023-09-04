@@ -1,7 +1,7 @@
 <!--
  * @Author: flwfdd
  * @Date: 2022-08-23 10:27:57
- * @LastEditTime: 2022-09-07 15:27:38
+ * @LastEditTime: 2023-09-04 21:07:12
  * @Description: 
  * _(:з」∠)_
 -->
@@ -82,7 +82,7 @@
 
     .tape {
       position: relative;
-      background-image: url("https://s1.328888.xyz/2022/08/18/3M4SE.png");
+      background-image: url("https://img1.imgtp.com/2023/09/04/DxwXKWeZ.png");
       margin: 42px auto;
       padding: 11px 24px 24px 24px;
       box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.24);
@@ -297,7 +297,7 @@
 
       <div class="tape">
         <div class="tape-head">序 | Intro</div>
-        <p id="intro">{{exam.intro}}</p>
+        <p id="intro" v-html="exam.intro"></p>
         <p id="profile"></p>
         <p v-if="result.score!=-1">得分：{{result.score}}/{{result.full_score}} |
           耗时：{{FormatTime((result.end_time-result.start_time)/1000)}}<br />{{result.extra}}</p>
@@ -358,8 +358,8 @@
       el: "#app",
       data: {
         hitokoto: "",
-        // apiurl: "https://flask-onlineexam-xvczascsjl.cn-hangzhou.fcapp.run",
-        apiurl: "http://127.0.0.1:9000",
+        apiurl: "https://flask-onlineexam-xvczascsjl.cn-hangzhou.fcapp.run",
+        // apiurl: "http://127.0.0.1:9000",
         sid: "",
         name: "",
         exam: {
