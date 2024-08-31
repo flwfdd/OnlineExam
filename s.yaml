@@ -57,6 +57,7 @@ services:
           TZ: Asia/Shanghai
           geetest_id:
           geetest_key:
+          db_url: ${env(db_url)}
       triggers:
         - name: httpTrigger
           type: http
