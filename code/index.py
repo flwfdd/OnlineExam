@@ -24,9 +24,10 @@ CORS(app, resources=r"/*")
 # 数据库设置
 app.config['SQLALCHEMY_DATABASE_URI'] = config.db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db.db.app = app
-db.db.init_app(app)
-db.db.create_all()
+with app.app_context():
+    db.db.app = app
+    db.db.init_app(app)
+    db.db.create_all()
 
 
 # 返回
