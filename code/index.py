@@ -165,7 +165,7 @@ def exam_submit():
 
     # 抽奖
     q.extra="很遗憾，没有中奖捏:("
-    if int(random.random()*q.full_score+1)<=q.score:
+    if int(random.random()*q.full_score+1)<=((q.score/q.full_score)**2)*q.full_score:
         prizes=db.Prize.query.filter_by(exam=q.exam).with_for_update().all()
         tot=sum([i.remain for i in prizes])
         x=random.random()
